@@ -1,5 +1,6 @@
 import { Router } from "express";
 import connectionPool from "../utils/db.mjs";
+import validateAnswer from "../middleware/validation.mjs";
 
 const routerQuestion = Router();
 
@@ -146,7 +147,7 @@ routerQuestion.post("/", async (req, res) => {
 });
 
 //create an answer for a question
-routerQuestion.post("/:questionId/answers", async (req, res) => {
+routerQuestion.post("/:questionId/answers", [validateAnswer], async (req, res) => {
     try {
         // check content
         const { content } = req.body;
@@ -264,7 +265,7 @@ routerQuestion.put("/:questionId", async (req, res) => {
 });
 
 //delete
-//delete a question by ID
+//delete a question by ID also theis answers
 routerQuestion.delete("/:questionId", async (req, res) => {
     try {
         // checkquestionId
@@ -280,7 +281,11 @@ routerQuestion.delete("/:questionId", async (req, res) => {
         }
 
         await connectionPool.query(
-            "DELETE FROM questions WHERE id = $1",
+            `DELETE FROM questions WHERE id = $1`,
+            [questionId]
+        );
+        await connectionPool.query(
+            `DELETE FROM answers WHERE question_id = $1`,
             [questionId]
         );
         return res.status(200).json({
