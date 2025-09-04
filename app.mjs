@@ -293,7 +293,6 @@ app.put("/questions/:questionId", async (req, res) => {
       });
     }
 
-    // Update question
     await connectionPool.query(
       "UPDATE questions SET title = $1, description = $2, category = $3 WHERE id = $4",
       [title, description, category, questionId]
@@ -306,6 +305,67 @@ app.put("/questions/:questionId", async (req, res) => {
     console.error(error);
     return res.status(500).json({
       message: "Unable to fetch questions."
+    });
+  }
+});
+
+//delete
+//delete a question by ID
+app.delete("/questions/:questionId", async (req, res) => {
+  try {
+    // checkquestionId
+    const { questionId } = req.params;
+    const existingQuestion = await connectionPool.query(
+      "SELECT * FROM questions WHERE id = $1",
+      [questionId]
+    );
+    if (existingQuestion.rows.length === 0) {
+      return res.status(404).json({
+        message: "Question not found."
+      });
+    }
+
+    await connectionPool.query(
+      "DELETE FROM questions WHERE id = $1",
+      [questionId]
+    );
+    return res.status(200).json({
+      message: "Question post has been deleted successfully."
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Unable to delete question."
+    });
+  }
+});
+
+//delete answers for a question
+app.delete("/questions/:questionId/answers", async (req, res) => {
+  try {
+    // checkquestionId
+    const { questionId } = req.params;
+    const existingQuestion = await connectionPool.query(
+      "SELECT * FROM questions WHERE id = $1",
+      [questionId]
+    );
+    if (existingQuestion.rows.length === 0) {
+      return res.status(404).json({
+        message: "Question not found."
+      });
+    }
+
+    await connectionPool.query(
+      "DELETE FROM answers WHERE question_id = $1",
+      [questionId]
+    );
+    return res.status(200).json({
+      message: "All answers for the question have been deleted successfully."
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Unable to delete answers."
     });
   }
 });
