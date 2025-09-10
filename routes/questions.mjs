@@ -76,9 +76,9 @@ routerQuestion.get("/:questionId", async (req, res) => {
                 message: "Question not found."
             });
         }
-
+        //refactor-1 : return the first row
         return res.status(200).json({
-            data: result.rows
+            data: result.rows[0]
         });
 
     } catch (error) {
@@ -130,12 +130,20 @@ routerQuestion.post("/", async (req, res) => {
             });
         }
 
-        await connectionPool.query(
-            `INSERT INTO questions (title, description, category) VALUES ($1, $2, $3)`,
+        //refactor-1 : return the first row
+        const result = await connectionPool.query(
+            `INSERT INTO questions (title, description, category) VALUES ($1, $2, $3) RETURNING *`,
             [title, description, category]
         );
 
+        //refactor-1 : return the first row
         return res.status(201).json({
+            data: {
+                id: result.rows[0].id,
+                title: result.rows[0].title,
+                description: result.rows[0].description,
+                category: result.rows[0].category,
+            },
             message: "Question created successfully."
         });
     } catch (error) {
@@ -149,13 +157,8 @@ routerQuestion.post("/", async (req, res) => {
 //create an answer for a question
 routerQuestion.post("/:questionId/answers", [validateAnswer], async (req, res) => {
     try {
-        // check content
+        // check content refactor-1 : move to validation
         const { content } = req.body;
-        if (!content) {
-            return res.status(400).json({
-                message: "Invalid request data."
-            });
-        }
 
         // checkquestionId
         const { questionId } = req.params;
@@ -229,8 +232,9 @@ routerQuestion.post("/:questionId/vote", async (req, res) => {
 routerQuestion.put("/:questionId", async (req, res) => {
     try {
         //check query
-        const { title, description, category } = req.body;
-        if (!title || !description || !category) {
+        //refactor-1 : remove category
+        const { title, description } = req.body;
+        if (!title || !description) {
             return res.status(400).json({
                 message: "Invalid request data."
             });
@@ -248,12 +252,20 @@ routerQuestion.put("/:questionId", async (req, res) => {
             });
         }
 
-        await connectionPool.query(
-            "UPDATE questions SET title = $1, description = $2, category = $3 WHERE id = $4",
-            [title, description, category, questionId]
+        //refactor-1 : return the first row
+        const result = await connectionPool.query(
+            "UPDATE questions SET title = $1, description = $2 WHERE id = $3 RETURNING *",
+            [title, description, questionId]
         );
 
+        //refactor-1 : return the first row
         return res.status(200).json({
+            data: {
+                id: result.rows[0].id,
+                title: result.rows[0].title,
+                description: result.rows[0].description,
+                category: result.rows[0].category,
+            },
             message: "Question updated successfully."
         });
     } catch (error) {
@@ -284,10 +296,7 @@ routerQuestion.delete("/:questionId", async (req, res) => {
             `DELETE FROM questions WHERE id = $1`,
             [questionId]
         );
-        await connectionPool.query(
-            `DELETE FROM answers WHERE question_id = $1`,
-            [questionId]
-        );
+        //refactor-1 : remove answers
         return res.status(200).json({
             message: "Question post has been deleted successfully."
         });
